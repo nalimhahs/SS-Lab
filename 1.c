@@ -279,7 +279,7 @@ void calcRoundRobin(proc proc_list[])
         {
             i++;
         }
-        if (i == PROC_COUNT)
+        if (i >= PROC_COUNT)
         {
             i = 0;
             iter_no++;
