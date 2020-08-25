@@ -1,5 +1,5 @@
 #include <stdio.h>
-#define TIME_SLICE 2
+#define TIME_SLICE 1
 
 int PROC_COUNT = 0;
 
@@ -263,9 +263,14 @@ void calcRoundRobin(proc proc_list[])
         if (proc_list[i].arrival_time <= time_elapsed)
         {
             int remaining_burst = proc_list[i].burst_time - TIME_SLICE * (iter_no - 1);
-            if (remaining_burst <= 0 && proc_list[i].burst_time - TIME_SLICE * (iter_no - 2) > 0)
+            if ((remaining_burst <= 0 && proc_list[i].burst_time - TIME_SLICE * (iter_no - 2) > 0))
             {
                 flag++;
+                i++;
+                continue;
+            }
+            if (remaining_burst < 0)
+            {
                 i++;
                 continue;
             }
@@ -286,7 +291,7 @@ void calcRoundRobin(proc proc_list[])
         }
     }
 
-    calcResultPreemptive(proc_list_temp, j - 2);
+    calcResultPreemptive(proc_list_temp, j);
 }
 
 int main()
