@@ -161,7 +161,9 @@ int main()
     int arr[] = {176, 79, 34, 60, 92, 11, 41, 114};
     int head = 50;
 
-    printf("%d\n", calcCSCAN(head, arr, 8));
+    printf("FCFS: %d\n", calcFCFS(head, arr, 8));
+    printf("SCAN: %d\n", calcSCAN(head, arr, 8));
+    printf("CSCAN: %d\n", calcCSCAN(head, arr, 8));
 
     return 0;
 }
