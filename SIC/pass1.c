@@ -17,7 +17,7 @@ void load_optab()
     int i = 0;
     while (!(feof(optab_file)))
     {
-        fscanf(optab_file, "%s %d", optab[i].mnemonic, &optab[i].opcode);
+        fscanf(optab_file, "%s %x", optab[i].mnemonic, &optab[i].opcode);
         i++;
     }
     optab_len = i;
@@ -75,7 +75,7 @@ void load_symtab()
     int i = 0;
     while (!(feof(symtab_file)))
     {
-        fscanf(symtab_file, "%s %d", symtab[i].symbol, &symtab[i].addr);
+        fscanf(symtab_file, "%s %x", symtab[i].symbol, &symtab[i].addr);
         if (strcmp(symtab[i].symbol, ""))
             continue;
         i++;
@@ -90,7 +90,7 @@ void dump_symtab()
     int i = 0;
     while (i < symtab_len)
     {
-        fprintf(symtab_file, "%s %d\n", symtab[i].symbol, symtab[i].addr);
+        fprintf(symtab_file, "%s %x\n", symtab[i].symbol, symtab[i].addr);
         i++;
     }
     fclose(symtab_file);
@@ -136,7 +136,7 @@ void load_inttab()
     int i = 0;
     while (!(feof(inttab_file)))
     {
-        fscanf(inttab_file, "%d %s %s %s", &inttab[i].addr, inttab[i].symbol, inttab[i].inst, inttab[i].value);
+        fscanf(inttab_file, "%x %s %s %s", &inttab[i].addr, inttab[i].symbol, inttab[i].inst, inttab[i].value);
         i++;
     }
     inttab_len = i;
@@ -149,7 +149,7 @@ void dump_inttab()
     int i = 0;
     while (i < inttab_len)
     {
-        fprintf(inttab_file, "%d %s %s %s\n", inttab[i].addr, inttab[i].symbol, inttab[i].inst, inttab[i].value);
+        fprintf(inttab_file, "%x %s %s %s\n", inttab[i].addr, inttab[i].symbol, inttab[i].inst, inttab[i].value);
         i++;
     }
     fclose(inttab_file);
@@ -164,7 +164,7 @@ void main()
     fscanf(input_file, "%s %s %s", prog_name, inst, start_addr);
     if (strcmp(inst, "START") == 0)
     {
-        locctr = atoi(start_addr);
+        locctr = (int)strtol(start_addr, NULL, 16);
         write_intermediate_inst(0, prog_name, inst, start_addr);
     }
     while (!(feof(input_file)))

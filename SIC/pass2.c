@@ -17,7 +17,7 @@ void load_optab()
     int i = 0;
     while (!(feof(optab_file)))
     {
-        fscanf(optab_file, "%s %d", optab[i].mnemonic, &optab[i].opcode);
+        fscanf(optab_file, "%s %x", optab[i].mnemonic, &optab[i].opcode);
         i++;
     }
     optab_len = i;
@@ -75,8 +75,9 @@ void load_symtab()
     int i = 0;
     while (!(feof(symtab_file)))
     {
-        fscanf(symtab_file, "%s %d", symtab[i].symbol, &symtab[i].addr);
-        if (strcmp(symtab[i].symbol, ""))
+        fscanf(symtab_file, "%s %x", symtab[i].symbol, &symtab[i].addr);
+
+        if (strcmp(symtab[i].symbol, "") == 0)
             continue;
         i++;
     }
@@ -90,7 +91,7 @@ void dump_symtab()
     int i = 0;
     while (i < symtab_len)
     {
-        fprintf(symtab_file, "%s %d\n", symtab[i].symbol, symtab[i].addr);
+        fprintf(symtab_file, "%s %x\n", symtab[i].symbol, symtab[i].addr);
         i++;
     }
     fclose(symtab_file);
@@ -115,7 +116,7 @@ struct inttab
     char inst[10];
     char value[10];
 
-} inttab[100];
+} inttab[100], int_inst;
 
 int inttab_len = 0;
 
@@ -136,10 +137,10 @@ void load_inttab()
     int i = 0;
     while (!(feof(inttab_file)))
     {
-        fscanf(inttab_file, "%d %s %s %s", &inttab[i].addr, inttab[i].symbol, inttab[i].inst, inttab[i].value);
+        fscanf(inttab_file, "%x %s %s %s", &inttab[i].addr, inttab[i].symbol, inttab[i].inst, inttab[i].value);
         i++;
     }
-    inttab_len = i;
+    inttab_len = i - 2;
     fclose(inttab_file);
 }
 
@@ -149,7 +150,7 @@ void dump_inttab()
     int i = 0;
     while (i < inttab_len)
     {
-        fprintf(inttab_file, "%d %s %s %s\n", inttab[i].addr, inttab[i].symbol, inttab[i].inst, inttab[i].value);
+        fprintf(inttab_file, "%x %s %s %s\n", inttab[i].addr, inttab[i].symbol, inttab[i].inst, inttab[i].value);
         i++;
     }
     fclose(inttab_file);
@@ -158,70 +159,73 @@ void dump_inttab()
 void main()
 {
     load_optab();
-    FILE *intermediate_file = fopen("inttab.txt", "r");
-    char prog_name[10], inst[10], start_addr[10], symbol[10], value[10];
-    int locctr = 0;
-    fscanf(intermediate_file, "%s %s %s", prog_name, inst, start_addr);
-    if (strcmp(inst, "START") == 0)
+    load_inttab();
+    load_symtab();
+
+    FILE *object_file = fopen("output.obj", "w");
+    char prog_name[10], inst[10], symbol[10], value[10];
+    int i = 1, flag = 1, count = 0;
+
+    int start_addr = (int)strtol(inttab[0].value, NULL, 16);
+
+    if (strcmp(inttab[0].inst, "START") == 0)
     {
-        locctr = atoi(start_addr);
-        write_intermediate_inst(0, prog_name, inst, start_addr);
+        fprintf(object_file, "H^%6s^%06x^%06x", inttab[0].symbol, start_addr, inttab[inttab_len].addr - start_addr);
     }
-    while (!(feof(intermediate_file)))
+    while (1)
     {
-        fscanf(intermediate_file, "%s %s %s", symbol, inst, value);
-        if (strcmp(inst, "END") == 0)
+        if (strcmp(inttab[i].inst, "END") == 0)
         {
-            printf("\nProgram size: %d\n", locctr - atoi(start_addr));
-            write_intermediate_inst(locctr, symbol, inst, value);
-            fclose(intermediate_file);
+            fprintf(object_file, "\nE^%06x", start_addr);
             break;
         }
 
-        int temp_addr = locctr;
-
-        if (strcmp(symbol, "") != 0 && strcmp(symbol, "-") != 0) 
+        int size = inttab[i + 1].addr - inttab[i].addr;
+        if (count + size > 30 || flag == 1)
         {
-            // Duplicate Symbol
-            if (!add_symbol(symbol, locctr))
-                break;
-        }
-
-        if (get_opcode(inst) != -1)
-        {
-            locctr += 3;
-        }
-        else if (strcmp(inst, "WORD") == 0)
-        {
-            locctr += 3;
-        }
-        else if (strcmp(inst, "BYTE") == 0)
-        {
-            if (value[0] == 'C')
-            {
-                locctr += strlen(value) - 3;
-            }
-            else if (value[0] == 'X')
-            {
-                locctr += (strlen(value) - 3) / 2;
-            }
-        }
-        else if (strcmp(inst, "RESW") == 0)
-        {
-            locctr += atoi(value) * 3;
-        }
-        else if (strcmp(inst, "RESB") == 0)
-        {
-            locctr += atoi(value);
+            fprintf(object_file, "\nT^%06x^00", inttab[i].addr);
+            flag = 0;
+            count = 0;
         }
         else
         {
-            // Invalid OPCODE
-            break;
+            count += size;
+            i++;
         }
 
-        write_intermediate_inst(temp_addr, symbol, inst, value);
+        int opcode = get_opcode(inttab[i].inst);
+        if (opcode != -1)
+        {
+            if (strcmp(inttab[i].value, "-") == 0)
+            {
+                fprintf(object_file, "^%02x0000", opcode);
+            }
+            else
+            {
+                int address = search_symtab(inttab[i].value);
+                fprintf(object_file, "^%02x%04x", opcode, address);
+            }
+        }
+        else if (strcmp(inttab[i].inst, "BYTE") == 0)
+        {
+            if (inttab[i].value[0] == 'C')
+            {
+                fprintf(object_file, "^");
+                printf("%s", inttab[i].value);
+                for (int j = 2; j < strlen(inttab[i].value) - 1; j++)
+                {
+                    fprintf(object_file, "%02x", inttab[i].value[j]);
+                }
+            }
+            else if (inttab[i].value[0] == 'X')
+            {
+                fprintf(object_file, "^%x", atoi(inttab[i].value));
+            }
+        }
+        else if (strcmp(inttab[i].inst, "WORD") == 0)
+        {
+            fprintf(object_file, "^%06x", atoi(inttab[i].value));
+        }
     }
-    dump_inttab();
-    dump_symtab();
+    fclose(object_file);
 }
