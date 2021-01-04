@@ -157,4 +157,7 @@ void main()
 
     int arr2[] = {7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2};
     printf("Page faults: %d\n", lru(arr2, 13, 4));
+
+    int arr2[] = {7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2};
+    printf("Page faults: %d\n", lfu(arr2, 13, 4));
 }
