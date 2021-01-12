@@ -184,13 +184,14 @@ void main()
     FILE *object_file = fopen("output.obj", "w");
     int i = 1, flag = 1, count = 0;
     char prog_name[10], inst[10], start_addr_char[10], symbol[10], value[10];
-    int locctr = 0, start_addr;
+    int locctr = 0, start_addr, rec_start_addr;
     fscanf(input_file, "%s %s %s", prog_name, inst, start_addr_char);
 
     if (strcmp(inst, "START") == 0)
     {
         start_addr = (int)strtol(start_addr_char, NULL, 16);
         locctr = start_addr;
+        rec_start_addr = locctr;
         fprintf(object_file, "H^%6s^%06x^%06x", prog_name, start_addr, start_addr); // replace with prog len
     }
 
@@ -199,6 +200,9 @@ void main()
         fscanf(input_file, "%s %s %s", symbol, inst, value);
         if (strcmp(inst, "END") == 0)
         {
+            fseek(object_file, rec_start_addr - locctr - 3, SEEK_CUR);
+            fprintf(object_file, "%02x", (locctr - rec_start_addr) / 2);
+            fseek(object_file, 0, SEEK_END);
             fprintf(object_file, "\nE^%06x", start_addr);
             fclose(input_file);
             break;
@@ -212,20 +216,22 @@ void main()
             if (!add_symbol(symbol, locctr))
                 break;
         }
-
         int size = get_inst_size(inst, value);
-        if (count + size > 30 || flag == 1)
+        if (strcmp(inst, "RESW") == 0 || strcmp(inst, "RESB") == 0)
         {
-            if (strcmp(inst, "RESW") == 0 || strcmp(inst, "RESB") == 0)
-            {
-                locctr += size;
-                fprintf(object_file, "\nT^%06x^00", locctr);
-                flag = 0;
-                count = 0;
-                continue;
-            }
-
+            locctr += size;
+            flag = 1;
+            // count = 0;
+            continue;
+        }
+        else if (count + size > 30 || flag == 1)
+        {
+            fseek(object_file, -count * 3 + 3, SEEK_CUR);
+            fprintf(object_file, "%02x", (locctr - rec_start_addr) / 2);
+            fseek(object_file, 0, SEEK_END);
+            printf("%d\n", locctr - rec_start_addr);
             fprintf(object_file, "\nT^%06x^00", locctr);
+            rec_start_addr = locctr;
             flag = 0;
             count = 0;
         }
@@ -287,6 +293,9 @@ void main()
             // break;
         }
     }
+    fseek(object_file, 16, SEEK_SET);
+    fprintf(object_file, "%06x", (locctr - start_addr));
+    fprintf(object_file, "     ");
     dump_symtab();
     dump_reftab();
     resolve_ref(object_file);
