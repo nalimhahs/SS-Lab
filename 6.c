@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 int mutex = 1, full = 0, empty = 3, x = 0;
 
 int wait(int s)
