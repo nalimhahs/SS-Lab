@@ -1,0 +1,6 @@
+A 0
+B 1
+C 2
+LOOP 9
+HALT 27
+END 2a
