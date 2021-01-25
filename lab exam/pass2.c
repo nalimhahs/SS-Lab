@@ -169,17 +169,12 @@ int get_regster_id(char *a)
 
 char *parse_value(char *val)
 {
-    char str[] = "Geeks-for-Geeks"; 
-  
-    // Returns first token 
-    char* token = strtok(str, "-"); 
-  
-    // Keep printing tokens while one of the 
-    // delimiters present in str[]. 
-    while (token != NULL) { 
-        printf("%s\n", token); 
-        token = strtok(NULL, "-"); 
-    } 
+    char *token = strtok(val, ",");
+    while (token != NULL)
+    {
+        printf("%s\n", token);
+        token = strtok(NULL, ",");
+    }
 }
 
 void main()
@@ -232,25 +227,17 @@ void main()
                 fprintf(object_file, "^%02x%04x", opcode, address);
             }
         }
-        else if (strcmp(inttab[i].inst, "BYTE") == 0)
+        else if (strcmp(inttab[i].inst, "DB") == 0)
         {
-            if (inttab[i].value[0] == 'C')
-            {
-                fprintf(object_file, "^");
-                printf("%s", inttab[i].value);
-                for (int j = 2; j < strlen(inttab[i].value) - 1; j++)
-                {
-                    fprintf(object_file, "%02x", inttab[i].value[j]);
-                }
-            }
-            else if (inttab[i].value[0] == 'X')
-            {
-                fprintf(object_file, "^%x", atoi(inttab[i].value));
-            }
+            fprintf(object_file, "^%x", atoi(inttab[i].value));
+        }
+        else if (strcmp(inttab[i].inst, "EQU") == 0)
+        {
+            fprintf(object_file, "^%x", atoi(inttab[i].value));
         }
         else if (strcmp(inttab[i].inst, "HLT") == 0)
         {
-            fprintf(object_file, "^%06x", atoi(inttab[i].value));
+            fprintf(object_file, "E0");
         }
     }
     fclose(object_file);
